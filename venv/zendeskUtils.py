@@ -17,63 +17,49 @@ db = client['Dittoids']  # Create or access the database
 
 
 def create_zendesk_ticket(
-    subject, description, requester_name, requester_email, assigneeEmail
+    subject, description, requester_name, requester_email, assigneeEmail, collaborators
 ):
-    assigneeID=get_agent_id_by_email(assigneeEmail)
+    assigneeID = get_agent_id_by_email(assigneeEmail)
     url = f"https://{DOMAIN}.zendesk.com/api/v2/tickets.json"
     headers = {"Content-Type": "application/json"}
-    # data = {
-    #     "request": {
-    #         "subject": subject,
-    #         "comment": {"body": "Hey, this ticket was assigned to you for resolution. Please follow up on it as soon as possible.\n\nCheers,\nYour Favourite Task Management Agent,\nPavlov\n\n"+description},
-    #         "requester": {
-    #             "name": requester_name,
-    #             "email": requester_email,
-    #         },
-    #         "assignee_id": assigneeID
-    #         # to assign it to someone in particular
-    #     }
-    # }
-    # if(assigneeID):
-    data={
+    
+    # Format collaborators as email_ccs list
+    email_ccs = [{"user_email": email} for email in collaborators] if collaborators else []
+    
+    data = {
         "ticket": {
             "subject": subject,
-            "comment": {"body": "Hey, this ticket was assigned to you for resolution. Please follow up on it as soon as possible.\n\nCheers,\nYour Favourite Task Management Agent,\nPavlov\n\n"+description},
+            "comment": {
+                "body": f"Hey, this ticket was assigned to you for resolution. Please follow up on it as soon as possible.\n\nCheers,\nYour Favourite Task Management Agent,\nPavlov\n\n{description}"
+            },
             "requester": {
                 "name": requester_name,
                 "email": requester_email,
             },
-            "assignee_id": assigneeID
+            "assignee_id": assigneeID,
+            "email_ccs": email_ccs  # Adding collaborators
         }
     }
-    # else:
-    #     data={
-    #         "ticket": {
-    #             "subject": subject,
-    #             "comment": {"body": "Hey, this ticket was assigned to you for resolution. Please follow up on it as soon as possible.\n\nCheers,\nYour Favourite Task Management Agent,\nPavlov\n\n"+description},
-    #             "requester": {
-    #                 "name": requester_name,
-    #                 "email": requester_email,
-    #             },
-    #         }
-    #     }
-
+    
     response = requests.post(
         url,
         headers=headers,
         auth=(f"{EMAIL}/token", TOKEN),
         json=data,
     )
-    task={
-        "ID":response.json()['ticket']['id'],
-        "Status":"new",        
-        "Subject":subject
-    }
-    collection = db[assigneeEmail]
-    collection.insert_one(task)
     
-    print(response.json())
-
+    response_json = response.json()
+    
+    if "ticket" in response_json:
+        task = {
+            "ID": response_json['ticket']['id'],
+            "Status": "new",        
+            "Subject": subject
+        }
+        collection = db[assigneeEmail]
+        collection.insert_one(task)
+    
+    print(response_json)
     return response
 
 
@@ -117,5 +103,5 @@ def get_agent_id_by_email(email):
         return None
 
 
-create_zendesk_ticket("Subject","apple","Siddhesh","siddhesh.shrawne22@spit.ac.in","siddhesh.shrawne22@spit.ac.in")
+create_zendesk_ticket("Subject","apple","Siddhesh","siddhesh.shrawne22@spit.ac.in","siddhesh.shrawne22@spit.ac.in",["darsh.tulsiyan22@spit.ac.in","omkar.surve22@spit.ac.in"])
 # print(get_agent_id_by_email("siddhesh.shrawne22@spit.ac.in"))
