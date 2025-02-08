@@ -17,7 +17,7 @@ db = client['Dittoids']  # Create or access the database
 
 
 def create_zendesk_ticket(
-    subject, description, requester_name, requester_email, assigneeEmail, collaborators
+    subject, description, requester_name, requester_email, assigneeEmail, collaborators, meetingTime
 ):
     assigneeID = get_agent_id_by_email(assigneeEmail)
     url = f"https://{DOMAIN}.zendesk.com/api/v2/tickets.json"
@@ -103,5 +103,5 @@ def get_agent_id_by_email(email):
         return None
 
 
-create_zendesk_ticket("Subject","apple","Siddhesh","siddhesh.shrawne22@spit.ac.in","siddhesh.shrawne22@spit.ac.in",["darsh.tulsiyan22@spit.ac.in","omkar.surve22@spit.ac.in"])
+# create_zendesk_ticket("Subject","apple","Siddhesh","siddhesh.shrawne22@spit.ac.in","siddhesh.shrawne22@spit.ac.in",["darsh.tulsiyan22@spit.ac.in","omkar.surve22@spit.ac.in"])
 # print(get_agent_id_by_email("siddhesh.shrawne22@spit.ac.in"))
