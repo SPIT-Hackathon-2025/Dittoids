@@ -53,6 +53,7 @@ Sample Response:
     "requester_email":"satyam.vyas22@spit.ac.in",
     "assigneeEmail":"yash.desai22@spit.ac.in",
     "collaboratorEmails":["siddhesh.shrawne22@spit.ac.in",],
+    "Meeting Required": 1
     "Meeting Time": "9th Feb 2025, 1 pm"
 }}
 
@@ -86,7 +87,43 @@ Sample Response:
         "yash.desai22@spit.ac.in",
         "omkar.surve22@spit.ac.in"
     ],
+    "Meeting Required": 1
     "Meeting Time": "18th March 2025,9 am"
+}}
+
+
+
+
+
+
+Sample Request:
+
+Inform all employees to use gpt 4o mini instead of gpt due to cost reasons
+Requester: Mahesh Panda
+Requester Email: mahesh.panda22@spit.ac.in
+
+{{
+    "darsh":["9th Feb 2025, 9 AM", "12th Oct 2025, 10 am"],
+    "siddhesh":["27th April 2025, 11 am"],
+    "omkar": ["18th march 2025, 4 pm"],
+    "yash": [3rd March 2025, 1 pm]    
+}}
+
+
+Sample Response:
+
+{{
+    "subject": "Friendly reminder for all employees",
+    "description":"This is a friendly reminder to all employees to stop using gpt 40 and use gpt 4o mini instead",
+    "requester_name":"Mahesh Panda",
+    "requester_email":"mahesh.panda22@spit.ac.in",
+    "assigneeEmail":"darsh.tulsiyan22@spit.ac.in",
+    "collaboratorEmails":[
+        "siddhesh.shrawne22@spit.ac.in",
+        "yash.desai22@spit.ac.in",
+        "omkar.surve22@spit.ac.in"
+    ],
+    "Meeting Required": 0
 }}
 """
 
@@ -106,11 +143,12 @@ def generateTask(text,requester_name,requester_email):
     
     resp=response.choices[0].message.content.strip("```").replace("json", "").replace("Response:","").replace("Schedule:","").strip()
     # print(resp)
+    print(resp)
     parsed_resp=json5.loads(resp)
     
     for collaborator in parsed_resp['collaboratorEmails']:
-        data[collaborator].append(parsed_resp['Meeting Time'])
-    data[parsed_resp['assigneeEmail']].append(parsed_resp['Meeting Time'])
+        data[collaborator].append(parsed_resp.get('Meeting Time'))
+    data[parsed_resp['assigneeEmail']].append(parsed_resp.get('Meeting Time'))
     
     with open('schedules.json','w') as file:
         file.write(json.dumps(data))
@@ -120,5 +158,5 @@ def generateTask(text,requester_name,requester_email):
     return parsed_resp
 
     
-obj=generateTask("Arrange a meeting between me and all employees on 9th April 2025 to discuss the 2025 Quarter 1 financial reports","Siddhesh Shrawne","siddheshshrawne10@gmail.com")
-# create_zendesk_ticket(obj['subject'],obj['description'],obj['requester_name'],obj['requester_email'],obj['assigneeEmail'],obj['collaboratorEmails'],obj['Meeting Time'])
+# obj=generateTask("Inform all employees to stop using window and switch to Mac","Siddhesh Shrawne","siddheshshrawne10@gmail.com")
+# create_zendesk_ticket(obj['subject'],obj['description'],obj['requester_name'],obj['requester_email'],obj['assigneeEmail'],obj['collaboratorEmails'],obj.get('Meeting Time'))

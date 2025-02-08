@@ -24,7 +24,7 @@ def create_zendesk_ticket(
     headers = {"Content-Type": "application/json"}
     
     # Format collaborators as email_ccs list
-    email_ccs = [{"user_email": email} for email in collaborators] if collaborators else []
+    # print(collaborators)
     
     data = {
         "ticket": {
@@ -37,7 +37,7 @@ def create_zendesk_ticket(
                 "email": requester_email,
             },
             "assignee_id": assigneeID,
-            "email_ccs": email_ccs  # Adding collaborators
+            "email_ccs": collaborators  # Adding collaborators
         }
     }
     
@@ -59,7 +59,7 @@ def create_zendesk_ticket(
         collection = db[assigneeEmail]
         collection.insert_one(task)
     
-    print(response_json)
+    # print(response_json)
     return response
 
 
