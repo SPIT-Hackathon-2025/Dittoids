@@ -9,5 +9,6 @@ Siddhesh:
         a) Create Zendesk Tickets
         b) Track pending tickets and their status
         c) Generate a list of tasks completed today
+        d) Create meetings based on everyone's schedules
     ii) Andrei (Executive Assistant):
     iii) Nikolai (Calendar Agent):
