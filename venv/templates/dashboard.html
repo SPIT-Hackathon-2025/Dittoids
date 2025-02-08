@@ -25,20 +25,36 @@
             <div class="w-1/3 h-40 bg-white shadow-md"></div>
         </main>
         
-        <!-- Right Panel: Chatbot -->
-        <aside class="w-1/4 bg-white shadow-lg p-4 flex flex-col">
-            <h2 class="text-xl font-semibold mb-4">Chatbot</h2>
-            <div id="chatbox" class="flex-1 overflow-y-auto p-2 bg-gray-100 rounded h-64"></div>
-            <input id="chatInput" type="text" placeholder="Type a message..." 
-                   class="p-2 border rounded mt-2 w-full" onkeypress="handleChat(event)">
+        <!-- Right Panel: Chatbots -->
+        <aside class="w-1/4 bg-white shadow-lg p-4 flex flex-col overflow-y-auto max-h-screen">
+            <div class="mb-4">
+                <h2 class="text-xl font-semibold mb-2">Talk to Pavlov</h2>
+                <h5>Office Communication Agent</h5>
+                <div id="chatboxPavlov" class="overflow-y-auto p-2 bg-gray-100 rounded h-40"></div>
+                <div class="flex items-center gap-2">
+                    <input id="chatInputPavlov" type="text" placeholder="Ask Pavlov..." 
+                           class="p-2 border rounded w-3/4" onkeypress="handleChat(event, 'Pavlov')">
+                    <button onclick="recordVoice('Pavlov')" class="p-2 bg-blue-500 text-white rounded">🎤</button>
+                </div>
+            </div>
+            <div>
+                <h2 class="text-xl font-semibold mb-2">Talk to Andrei</h2>
+                <h5>Personal Assistant</h5>
+                <div id="chatboxAndrei" class="overflow-y-auto p-2 bg-gray-100 rounded h-40"></div>
+                <div class="flex items-center gap-2">
+                    <input id="chatInputAndrei" type="text" placeholder="Ask Andrei..." 
+                           class="p-2 border rounded w-3/4" onkeypress="handleChat(event, 'Andrei')">
+                    <button onclick="recordVoice('Andrei')" class="p-2 bg-blue-500 text-white rounded">🎤</button>
+                </div>
+            </div>
         </aside>
     </div>
     
     <script>
-        async function handleChat(event) {
+        async function handleChat(event, botName) {
             if (event.key === 'Enter') {
-                let input = document.getElementById("chatInput");
-                let chatbox = document.getElementById("chatbox");
+                let input = document.getElementById("chatInput" + botName);
+                let chatbox = document.getElementById("chatbox" + botName);
                 
                 if (input.value.trim() !== "") {
                     // Send user message to chatbox
@@ -54,19 +70,19 @@
                             headers: {
                                 'Content-Type': 'application/json'
                             },
-                            body: JSON.stringify({ message: input.value })
+                            body: JSON.stringify({ message: input.value, bot: botName })
                         });
 
                         let data = await response.json();
                         
                         if (data.response) {
                             let chatbotMessage = document.createElement("div");
-                            chatbotMessage.textContent = "Chatbot: " + data.response;
+                            chatbotMessage.textContent = botName + ": " + data.response;
                             chatbotMessage.className = "p-2 bg-green-200 rounded my-1";
                             chatbox.appendChild(chatbotMessage);
                         } else {
                             let errorMessage = document.createElement("div");
-                            errorMessage.textContent = "Chatbot: Sorry, I didn't understand that.";
+                            errorMessage.textContent = botName + ": Sorry, I didn't understand that.";
                             errorMessage.className = "p-2 bg-red-200 rounded my-1";
                             chatbox.appendChild(errorMessage);
                         }
@@ -78,6 +94,37 @@
                     input.value = "";
                     chatbox.scrollTop = chatbox.scrollHeight;
                 }
+            }
+        }
+
+        async function recordVoice(botName) {
+            try {
+                let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                let mediaRecorder = new MediaRecorder(stream);
+                let audioChunks = [];
+
+                mediaRecorder.ondataavailable = event => {
+                    audioChunks.push(event.data);
+                };
+
+                mediaRecorder.onstop = async () => {
+                    let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
+                    let formData = new FormData();
+                    formData.append("audio", audioBlob);
+
+                    let response = await fetch('/record', { method: 'POST', body: formData });
+                    let data = await response.json();
+
+                    if (data.transcription) {
+                        document.getElementById("chatInput" + botName).value = data.transcription;
+                        handleChat({ key: 'Enter' }, botName);
+                    }
+                };
+
+                mediaRecorder.start();
+                setTimeout(() => mediaRecorder.stop(), 5000); // Record for 5 seconds
+            } catch (error) {
+                console.error("Error recording voice:", error);
             }
         }
     </script>

@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
 from openAITest import *
+import assemblyai as aai
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -22,6 +24,7 @@ def register():
     email = request.form.get('email')
     password = request.form.get('password')
     confirm_password = request.form.get('confirm_password')
+    notionUsername=request.form.get('notionUsername')
     
     if not email or not password or not confirm_password:
         flash('All fields are required!', 'danger')
@@ -37,7 +40,7 @@ def register():
         return redirect(url_for('sign_up'))
     
     hashed_password = generate_password_hash(password)
-    collection.insert_one({'email': email, 'password': hashed_password})
+    collection.insert_one({'email': email, 'password': hashed_password,'notionUsername':notionUsername})
     flash('Account created successfully!', 'success')
     return redirect(url_for('login'))
 
@@ -88,7 +91,40 @@ def chatbot():
     print(session['email'])
     obj=generateTask(user_message,session['username'],session['email'])
     create_zendesk_ticket(obj['subject'],obj['description'],obj['requester_name'],obj['requester_email'],obj['assigneeEmail'],obj['collaboratorEmails'],obj.get('Meeting Time'))
-    return jsonify({"response": "Your ticket has been successfully created!"})
+    
+    if('Meeting Time' in obj):
+        resp="Your ticket has been successfully created!\nAfter reviewing everyone's schedule, I have scheduled the meeting for " +obj['Meeting Time'] +"\nI have also informed all relevant parties of the same via email"
+    else:
+        resp="Your ticket has been successfully created!\nThe message has been sent to all relevant parties via email."
+    
+    return jsonify({"response":resp})
+
+
+
+
+aai.settings.api_key = os.getenv("ASSEMBLY_API_KEY")
+
+def transcribe_audio(audio_data):
+    audio_io = io.BytesIO(audio_data)
+    transcriber = aai.Transcriber()
+    transcript = transcriber.transcribe(audio_io)
+    
+    if transcript.status == aai.TranscriptStatus.error:
+        return f"Transcription failed: {transcript.error}"
+    return transcript.text
+
+
+
+@app.route('/record', methods=['POST'])
+def record_audio():
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file uploaded'}), 400
+    
+    audio_file = request.files['audio']
+    audio_data = audio_file.read()
+    
+    transcript_text = transcribe_audio(audio_data)
+    return jsonify({'transcription': transcript_text})
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
