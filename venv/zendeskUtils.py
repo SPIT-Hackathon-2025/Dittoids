@@ -1,11 +1,14 @@
 import requests
 import json
-import load_dotenv
+from dotenv import load_dotenv
 import os
 
+load_dotenv()
+
 TOKEN = os.getenv("ZENDESK_API_KEY")
-DOMAIN = "sardarpatelinstituteoftechnology5714"
-EMAIL = "yash.desai22@spit.ac.in"
+DOMAIN = os.getenv("DOMAIN")
+EMAIL = os.getenv("EMAIL")
+
 
 
 
@@ -18,7 +21,7 @@ def create_zendesk_ticket(
     data = {
         "request": {
             "subject": subject,
-            "comment": {"body": description},
+            "comment": {"body": "Hey, this ticket was assigned to you for resolution. Please follow up on it as soon as possible.\n\nCheers,\nYour Favourite Task Management Agent,\nPavlov\n\n"+description},
             "requester": {
                 "name": requester_name,
                 "email": requester_email,
@@ -50,4 +53,4 @@ def get_ticket_status(ticket_id):
 
     return response
 
-create_zendesk_ticket("Subject","Test","Siddhesh","siddhesh.shrawne22@spit.ac.in",0)
+create_zendesk_ticket("Subject","Test","Siddhesh",EMAIL,0)
