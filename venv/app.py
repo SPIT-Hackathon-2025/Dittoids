@@ -6,6 +6,8 @@ from dotenv import load_dotenv
 from openAITest import *
 import assemblyai as aai
 import io
+from swarm import Swarm
+from agents import main_agent
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -14,6 +16,12 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 client = MongoClient(os.getenv("MONGO_CONN_STR"))
 db = client['auth_db']
 collection = db.users
+
+api_key = os.getenv("OPENAI_API_KEY")
+if not api_key:
+    raise ValueError("Missing OpenAI API Key. Set it in a .env file or system environment.")
+
+swarm_client = Swarm()
 
 @app.route('/sign_up', methods=['GET'])
 def sign_up():
@@ -92,8 +100,12 @@ def chatbot():
     obj=generateTask(user_message,session['username'],session['email'])
     create_zendesk_ticket(obj['subject'],obj['description'],obj['requester_name'],obj['requester_email'],obj['assigneeEmail'],obj['collaboratorEmails'],obj.get('Meeting Time'))
     
+    
     if('Meeting Time' in obj):
-        resp="Your ticket has been successfully created!\nAfter reviewing everyone's schedule, I have scheduled the meeting for " +obj['Meeting Time'] +"\nI have also informed all relevant parties of the same via email"
+        print(generate_bot_response(user_message+"\nThe meeting should be at:"+obj['Meeting Time']))
+    
+    if('Meeting Time' in obj):
+        resp="Your ticket has been successfully created!\nAfter reviewing everyone's schedule, I have scheduled the meeting for " +obj['Meeting Time'] +"\nI have also informed all relevant parties of the same via email. The Event for the same has also been created in your calendar."
     else:
         resp="Your ticket has been successfully created!\nThe message has been sent to all relevant parties via email."
     
@@ -125,6 +137,22 @@ def record_audio():
     
     transcript_text = transcribe_audio(audio_data)
     return jsonify({'transcription': transcript_text})
+
+
+def generate_bot_response(user_message):
+    if not user_message:
+        return jsonify({"error": "Empty message"}), 400
+
+    # Process the chatbot response
+    response = swarm_client.run(
+        agent=main_agent,
+        debug=False,
+        messages=[{"role": "user", "content": user_message}]
+    )
+
+    bot_reply = response.messages[-1]["content"]
+
+    return jsonify({"response": bot_reply})
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
