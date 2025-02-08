@@ -21,6 +21,7 @@ The schedules for each employee will be given to you in the form of a json objec
 an hour long and the employee will be free 1 hour after the time mentioned in the object.
 For example, if the time 10th October 2025, 9 am is mentioned for an employee, you may schedule a meeting at 10 am for the same employee on the same date.
 Only schedule meetings between 9 am and 5 pm.
+Do not include any reasoning, formatting or any extra text other than the json object. Strictly stick to the output format.
 
 There are the employee names and their emails
 Siddhesh Shrawne : siddhesh.shrawne22@spit.ac.in

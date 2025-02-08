@@ -37,7 +37,7 @@ def create_zendesk_ticket(
                 "email": requester_email,
             },
             "assignee_id": assigneeID,
-            "email_ccs": collaborators  # Adding collaborators
+            # "email_ccs": collaborators  # Adding collaborators
         }
     }
     
@@ -49,11 +49,12 @@ def create_zendesk_ticket(
     )
     
     response_json = response.json()
+    print(response_json)
     
-    if "ticket" in response_json:
+    if meetingTime:
         task = {
             "ID": response_json['ticket']['id'],
-            "Status": "new",        
+            "Date": meetingTime,        
             "Subject": subject
         }
         collection = db[assigneeEmail]

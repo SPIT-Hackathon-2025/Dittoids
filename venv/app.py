@@ -10,7 +10,7 @@ app.config['SECRET_KEY'] = 'your_secret_key'
 
 # MongoDB setup
 client = MongoClient(os.getenv("MONGO_CONN_STR"))
-db = client.auth_db
+db = client['auth_db']
 collection = db.users
 
 @app.route('/sign_up', methods=['GET'])
@@ -69,7 +69,17 @@ def dashboard():
     if 'email' not in session:
         flash('Please login first', 'warning')
         return redirect(url_for('login'))
-    return render_template('dashboard.html')
+    tdb=client['Dittoids']
+    coll=tdb[session['email']]
+    
+    arr=coll.find()
+    meetings=[]
+    print(arr)
+    for a in arr:
+        print(a)
+        meetings.append(a['Subject'])
+    print(meetings)
+    return render_template('dashboard.html',meetings=meetings)
 
 @app.route('/chatbot',methods=['GET',"POST"])
 def chatbot():
