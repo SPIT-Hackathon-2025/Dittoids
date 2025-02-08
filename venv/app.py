@@ -4,6 +4,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 import os
 from dotenv import load_dotenv
 from openAITest import *
+import assemblyai as aai
+import io
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -97,5 +99,32 @@ def chatbot():
     
     return jsonify({"response":resp})
 
+
+
+
+aai.settings.api_key = os.getenv("ASSEMBLY_API_KEY")
+
+def transcribe_audio(audio_data):
+    audio_io = io.BytesIO(audio_data)
+    transcriber = aai.Transcriber()
+    transcript = transcriber.transcribe(audio_io)
+    
+    if transcript.status == aai.TranscriptStatus.error:
+        return f"Transcription failed: {transcript.error}"
+    return transcript.text
+
+
+
+@app.route('/record', methods=['POST'])
+def record_audio():
+    if 'audio' not in request.files:
+        return jsonify({'error': 'No audio file uploaded'}), 400
+    
+    audio_file = request.files['audio']
+    audio_data = audio_file.read()
+    
+    transcript_text = transcribe_audio(audio_data)
+    return jsonify({'transcription': transcript_text})
+
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(host='127.0.0.1', port=5000, debug=True)
