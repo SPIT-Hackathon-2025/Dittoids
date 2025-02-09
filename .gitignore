@@ -1,5 +1,6 @@
 /venv/.env
 /venv/lib/
+/venv/Lib/
 /.env
 /venv/Include/
 /venv/Scripts/

@@ -8,6 +8,7 @@ import assemblyai as aai
 import io
 from swarm import Swarm
 from agents import main_agent
+from apple import *
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
@@ -92,7 +93,7 @@ def dashboard():
     print(meetings)
     return render_template('dashboard.html',meetings=meetings)
 
-@app.route('/chatbot',methods=['GET',"POST"])
+@app.route('/chatbotPavlov',methods=['GET',"POST"])
 def chatbot():
     user_message = request.json.get('message')
     print(session['username'])
@@ -111,6 +112,11 @@ def chatbot():
     
     return jsonify({"response":resp})
 
+
+@app.route('/chatbotAndrei',methods=["POST"])
+def andrei():
+    user_message=request.json.get('message')
+    return jsonify({"response":get_openai_response(user_message)})
 
 
 

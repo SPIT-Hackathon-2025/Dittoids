@@ -65,7 +65,7 @@
 
                     // Send message to chatbot endpoint
                     try {
-                        let response = await fetch('/chatbot', {
+                        let response = await fetch('/chatbot'+botName, {
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json'
