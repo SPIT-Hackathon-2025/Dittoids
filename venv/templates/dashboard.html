@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zendesk-Like Page</title>
+    <title>Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="h-screen flex flex-col bg-gray-100">
@@ -18,11 +18,27 @@
             </ul>
         </aside>
         
-        <!-- Center: Empty Divs -->
-        <main class="flex-1 flex flex-wrap p-4 gap-4">
-            <div class="w-1/3 h-40 bg-white shadow-md"></div>
-            <div class="w-1/3 h-40 bg-white shadow-md"></div>
-            <div class="w-1/3 h-40 bg-white shadow-md"></div>
+        <!-- Center: File Upload and Generated Minutes -->
+        <main class="flex-1 p-4">
+            <h2 class="text-xl font-semibold mb-4">Upload Meeting Transcript</h2>
+            <form action="/dashboard" method="POST" enctype="multipart/form-data" class="mb-4">
+                <input type="file" name="file" class="p-2 border rounded">
+                <button type="submit" class="p-2 bg-blue-500 text-white rounded">Upload</button>
+            </form>
+
+            {% if transcript %}
+                <div class="p-4 bg-white shadow-md rounded" style="max-height: 200px; overflow-y: auto;">
+                    <h3 class="text-lg font-semibold">Transcript:</h3>
+                    <p class="whitespace-pre-wrap">{{ transcript }}</p>
+                </div>
+            {% endif %}
+
+            {% if minutes %}
+                <div class="p-4 bg-green-100 shadow-md rounded mt-4" style="max-height: 200px; overflow-y: auto;">
+                    <h3 class="text-lg font-semibold">Generated Minutes:</h3>
+                    <p class="whitespace-pre-wrap">{{ minutes }}</p>
+                </div>
+            {% endif %}
         </main>
         
         <!-- Right Panel: Chatbots -->
@@ -49,84 +65,5 @@
             </div>
         </aside>
     </div>
-    
-    <script>
-        async function handleChat(event, botName) {
-            if (event.key === 'Enter') {
-                let input = document.getElementById("chatInput" + botName);
-                let chatbox = document.getElementById("chatbox" + botName);
-                
-                if (input.value.trim() !== "") {
-                    // Send user message to chatbox
-                    let userMessage = document.createElement("div");
-                    userMessage.textContent = "You: " + input.value;
-                    userMessage.className = "p-2 bg-blue-200 rounded my-1";
-                    chatbox.appendChild(userMessage);
-
-                    // Send message to chatbot endpoint
-                    try {
-                        let response = await fetch('/chatbot'+botName, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({ message: input.value, bot: botName })
-                        });
-
-                        let data = await response.json();
-                        
-                        if (data.response) {
-                            let chatbotMessage = document.createElement("div");
-                            chatbotMessage.textContent = botName + ": " + data.response;
-                            chatbotMessage.className = "p-2 bg-green-200 rounded my-1";
-                            chatbox.appendChild(chatbotMessage);
-                        } else {
-                            let errorMessage = document.createElement("div");
-                            errorMessage.textContent = botName + ": Sorry, I didn't understand that.";
-                            errorMessage.className = "p-2 bg-red-200 rounded my-1";
-                            chatbox.appendChild(errorMessage);
-                        }
-                    } catch (error) {
-                        console.error("Error:", error);
-                    }
-
-                    // Clear the input field and scroll to the bottom of the chat
-                    input.value = "";
-                    chatbox.scrollTop = chatbox.scrollHeight;
-                }
-            }
-        }
-
-        async function recordVoice(botName) {
-            try {
-                let stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                let mediaRecorder = new MediaRecorder(stream);
-                let audioChunks = [];
-
-                mediaRecorder.ondataavailable = event => {
-                    audioChunks.push(event.data);
-                };
-
-                mediaRecorder.onstop = async () => {
-                    let audioBlob = new Blob(audioChunks, { type: "audio/wav" });
-                    let formData = new FormData();
-                    formData.append("audio", audioBlob);
-
-                    let response = await fetch('/record', { method: 'POST', body: formData });
-                    let data = await response.json();
-
-                    if (data.transcription) {
-                        document.getElementById("chatInput" + botName).value = data.transcription;
-                        handleChat({ key: 'Enter' }, botName);
-                    }
-                };
-
-                mediaRecorder.start();
-                setTimeout(() => mediaRecorder.stop(), 5000); // Record for 5 seconds
-            } catch (error) {
-                console.error("Error recording voice:", error);
-            }
-        }
-    </script>
 </body>
 </html>

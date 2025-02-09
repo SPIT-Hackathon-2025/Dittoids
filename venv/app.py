@@ -13,9 +13,14 @@ from apple import *
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your_secret_key'
 
+app.config["UPLOAD_FOLDER"] = "uploads"
+
+# Ensure upload folder exists
+os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+
 # MongoDB setup
-client = MongoClient(os.getenv("MONGO_CONN_STR"))
-db = client['auth_db']
+Client = MongoClient(os.getenv("MONGO_CONN_STR"))
+db = Client['auth_db']
 collection = db.users
 
 api_key = os.getenv("OPENAI_API_KEY")
@@ -23,6 +28,16 @@ if not api_key:
     raise ValueError("Missing OpenAI API Key. Set it in a .env file or system environment.")
 
 swarm_client = Swarm()
+
+def extract_text_from_file(file_path):
+    """Extract text from a TXT or DOCX file."""
+    if file_path.endswith(".txt"):
+        with open(file_path, "r", encoding="utf-8") as f:
+            return f.read()
+    elif file_path.endswith(".docx"):
+        doc = docx.Document(file_path)
+        return "\n".join([para.text for para in doc.paragraphs])
+    return ""
 
 @app.route('/sign_up', methods=['GET'])
 def sign_up():
@@ -76,13 +91,42 @@ def authenticate():
     flash('Invalid credentials', 'danger')
     return redirect(url_for('login'))
 
-@app.route('/dashboard')
+@app.route('/dashboard',methods=['GET','POST'])
 def dashboard():
+    minutes = None  # To store generated minutes
+    transcript = None 
     if 'email' not in session:
         flash('Please login first', 'warning')
         return redirect(url_for('login'))
-    tdb=client['Dittoids']
+    tdb=Client['Dittoids']
     coll=tdb[session['email']]
+    
+    if request.method == "POST":
+        if "file" not in request.files:
+            return render_template("index.html", error="No file uploaded.")
+
+        file = request.files["file"]
+
+        if file.filename == "":
+            return render_template("index.html", error="No file selected.")
+
+        if file and file.filename.endswith((".txt", ".docx")):
+            file_path = os.path.join(app.config["UPLOAD_FOLDER"], file.filename)
+            file.save(file_path)
+            transcript = extract_text_from_file(file_path)
+
+            if not transcript.strip():
+                return render_template("index.html", error="Uploaded file is empty.")
+
+            # Generate meeting minutes using OpenAI API
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "Generate concise minutes of the meeting from this transcript."},
+                    {"role": "user", "content": transcript}
+                ]
+            )
+            minutes = response.choices[0].message.content
     
     arr=coll.find()
     meetings=[]
@@ -91,7 +135,7 @@ def dashboard():
         print(a)
         meetings.append(a['Subject'])
     print(meetings)
-    return render_template('dashboard.html',meetings=meetings)
+    return render_template('dashboard.html',meetings=meetings,minutes=minutes,transcript=transcript)
 
 @app.route('/chatbotPavlov',methods=['GET',"POST"])
 def chatbot():
