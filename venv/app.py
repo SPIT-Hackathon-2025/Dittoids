@@ -142,6 +142,7 @@ def chatbot():
     user_message = request.json.get('message')
     print(session['username'])
     print(session['email'])
+    generate_bot_response(user_message)
     obj=generateTask(user_message,session['username'],session['email'])
     create_zendesk_ticket(obj['subject'],obj['description'],obj['requester_name'],obj['requester_email'],obj['assigneeEmail'],obj['collaboratorEmails'],obj.get('Meeting Time'))
     
@@ -203,6 +204,17 @@ def generate_bot_response(user_message):
     bot_reply = response.messages[-1]["content"]
 
     return jsonify({"response": bot_reply})
+
+
+def generate_bot_response(user_input):
+    response = swarm_client.run(
+        agent=main_agent,
+        debug=False,
+        messages=[{"role": "user", "content": user_input}]
+    )
+
+    bot_reply = response.messages[-1]["content"]
+
 
 if __name__ == '__main__':
     app.run(host='127.0.0.1', port=5000, debug=True)
